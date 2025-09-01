@@ -1,0 +1,175 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Snake game</title>
+    <style>
+        canvas {
+            display: block;
+            margin: auto;
+            background-color: gray;
+        }
+    </style>
+</head>
+<body>
+    <script>
+        function SnakeGame() {
+            const canvas = document.createElement('canvas');
+            const ctx = canvas.getContext('2d');
+            document.body.appendChild(canvas);
+
+            const WIDTH = 500;
+            const HEIGHT = 500;
+            const SPEED = 350;
+            const SPACE_SIZE = 20;
+            const BODY_SIZE = 4;
+            const SNAKE_COLOR = "maroon";
+            const FOOD_COLOR = "lime";
+            const BACKGROUND_COLOR = "gray";
+
+            canvas.width = WIDTH;
+            canvas.height = HEIGHT;
+
+            let score = 0;
+            let direction = 'down';
+            let snake = new Snake();
+            let food = new Food();
+
+            function Snake() {
+                this.bodySize = BODY_SIZE;
+                this.coordinates = [];
+                this.squares = [];
+
+                for (let i = 0; i < BODY_SIZE; i++) {
+                    this.coordinates.push([i * SPACE_SIZE, 0]);
+                }
+
+                for (const [x, y] of this.coordinates) {
+                    const square = {
+                        x: x,
+                        y: y
+                    };
+                    this.squares.push(square);
+                }
+
+                this.updateSnake = function () {
+                    ctx.clearRect(0, 0, WIDTH, HEIGHT);
+                    for (const square of this.squares) {
+                        ctx.fillStyle = SNAKE_COLOR;
+                        ctx.fillRect(square.x, square.y, SPACE_SIZE, SPACE_SIZE);
+                    }
+                    // Draw food
+                    ctx.fillStyle = FOOD_COLOR;
+                    ctx.beginPath();
+                    ctx.arc(food.coordinates[0] + SPACE_SIZE / 2, food.coordinates[1] + SPACE_SIZE / 2, SPACE_SIZE / 2, 0, Math.PI * 2);
+                    ctx.fill();
+                };
+            }
+
+            function Food() {
+                const x = Math.floor(Math.random() * (WIDTH / SPACE_SIZE)) * SPACE_SIZE;
+                const y = Math.floor(Math.random() * (HEIGHT / SPACE_SIZE)) * SPACE_SIZE;
+                this.coordinates = [x, y];
+            }
+
+            function nextTurn() {
+                let [x, y] = snake.coordinates[0];
+
+                if (direction === "up") {
+                    y -= SPACE_SIZE;
+                } else if (direction === "down") {
+                    y += SPACE_SIZE;
+                } else if (direction === "left") {
+                    x -= SPACE_SIZE;
+                } else if (direction === "right") {
+                    x += SPACE_SIZE;
+                }
+
+                snake.coordinates.unshift([x, y]);
+
+                const square = {
+                    x: x,
+                    y: y
+                };
+                snake.squares.unshift(square);
+
+                if (x === food.coordinates[0] && y === food.coordinates[1]) {
+                    score++;
+                    updateScore();
+                    food = new Food();
+                } else {
+                    snake.coordinates.pop();
+                    snake.squares.pop();
+                }
+
+                if (checkCollisions()) {
+                    gameOver();
+                } else {
+                    snake.updateSnake();
+                    setTimeout(nextTurn, SPEED);
+                }
+            }
+
+            function changeDirection(newDirection) {
+                if (
+                    (newDirection === 'left' && direction !== 'right') ||
+                    (newDirection === 'right' && direction !== 'left') ||
+                    (newDirection === 'up' && direction !== 'down') ||
+                    (newDirection === 'down' && direction !== 'up')
+                ) {
+                    direction = newDirection;
+                }
+            }
+
+            function checkCollisions() {
+                const [x, y] = snake.coordinates[0];
+
+                if (x < 0 || x >= WIDTH || y < 0 || y >= HEIGHT) {
+                    return true;
+                }
+
+                for (const bodyPart of snake.coordinates.slice(1)) {
+                    if (x === bodyPart[0] && y === bodyPart[1]) {
+                        return true;
+                    }
+                }
+
+                return false;
+            }
+
+            function gameOver() {
+                ctx.clearRect(0, 0, WIDTH, HEIGHT);
+                ctx.fillStyle = "red";
+                ctx.font = "70px consolas";
+                ctx.textAlign = "center";
+                ctx.fillText("GAME OVER", WIDTH / 2, HEIGHT / 2);
+            }
+
+            function updateScore() {
+                document.getElementById('score').textContent = "Points: " + score;
+            }
+
+            document.addEventListener('keydown', function (event) {
+                if (event.key === "ArrowLeft") {
+                    changeDirection('left');
+                } else if (event.key === "ArrowRight") {
+                    changeDirection('right');
+                } else if (event.key === "ArrowUp") {
+                    changeDirection('up');
+                } else if (event.key === "ArrowDown") {
+                    changeDirection('down');
+                }
+            });
+
+            updateScore();
+            nextTurn();
+        }
+
+        window.onload = function () {
+            SnakeGame();
+        };
+    </script>
+    <div id="score" style="font-family: consolas; font-size: 20px; text-align: center;">Points: 0</div>
+</body>
+</html>
